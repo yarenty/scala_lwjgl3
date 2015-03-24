@@ -43,56 +43,80 @@ public class OpenCLSum {
     
     public static void main(String[] args) throws Exception {
     	
-
+    	System.setProperty("org.lwjgl.opencl.explicitInit","true");
+    	
     	
         // Initialize OpenCL and create a context and command queue
         CL.create();
-        
+        System.out.println("CL created");
         
         CLPlatform platform = CLPlatform.getPlatforms().get(0);
+        System.out.println("Platform created");
 
         PointerBuffer ctxProps = BufferUtils.createPointerBuffer(3);
 		ctxProps.put(CL_CONTEXT_PLATFORM).put(platform).put(0).flip();
+		System.out.println("CTX created");
 		
 		
         IntBuffer errcode_ret = BufferUtils.createIntBuffer(1);
+		System.out.println("ERRCODE created");
+
         
         List<CLDevice> devices = platform.getDevices(CL_DEVICE_TYPE_GPU);
        // long context = clCreateContext(platform, devices, null, null, null);
 		long context = clCreateContext(ctxProps, devices.get(0).getPointer(), CREATE_CONTEXT_CALLBACK, NULL, errcode_ret);
+		System.out.println("CONTEXT created");
+
+		
 		checkCLError(errcode_ret);
         //CLCommandQueue queue = clCreateCommandQueue(context, devices.get(0), CL_QUEUE_PROFILING_ENABLE, null);
         long queue = clCreateCommandQueue(context, devices.get(0).getPointer(), CL_QUEUE_PROFILING_ENABLE, errcode_ret);
- 
+		System.out.println("Command Q created");
+
         // Allocate memory for our two input buffers and our result buffer
         long aMem = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, a, null);
         //long buffer = clCreateBuffer(context, CL_MEM_READ_ONLY, 128, errcode_ret);
+		System.out.println("A Buffer created");
         clEnqueueWriteBuffer(queue, aMem, 1, 0, a, null, null);
         long bMem = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, b, null);
+		System.out.println("B Buffer created");
         clEnqueueWriteBuffer(queue, bMem, 1, 0, b, null, null);
         long answerMem = clCreateBuffer(context, CL_MEM_WRITE_ONLY | CL_MEM_COPY_HOST_PTR, answer, null);
+		System.out.println("OUTPUT Buffer created");
         clFinish(queue);
  
         // Create our program and kernel
         long program = clCreateProgramWithSource(context, source, null);
-        
+		System.out.println("PROGRAM created");
+
     	//public static int clBuildProgram(long program, long device, CharSequence options, CLProgramCallback pfn_notify, long user_data) {
 
     		
         CLUtil.checkCLError(clBuildProgram(program, devices.get(0).getPointer(), "", null, 0L));
         // sum has to match a kernel method name in the OpenCL source
         long kernel = clCreateKernel(program, "sum", null);
- 
+		System.out.println("KERNEL created");
+
         // Execution our kernel
         PointerBuffer kernel1DGlobalWorkSize = BufferUtils.createPointerBuffer(1);
+        System.out.println("KERNEL work size created");
         kernel1DGlobalWorkSize.put(0, a.capacity());
-        clSetKernelArg(kernel, 0, aMem);
-        clSetKernelArg(kernel, 1, bMem);
-        clSetKernelArg(kernel, 2, answerMem);
+        System.out.println("KERNEL work size copied");
+        
+        clSetKernelArg1p(kernel, 0, aMem);
+        clSetKernelArg1p(kernel, 1, bMem);
+        clSetKernelArg1p(kernel, 2, answerMem);
+        
+		System.out.println("Args send to kernel");
+
         clEnqueueNDRangeKernel(queue, kernel, 1, null, kernel1DGlobalWorkSize, null, null, null);
- 
+        System.out.println("KERNEL queued created");
+        
+        
         // Read the results memory back into our result buffer
         clEnqueueReadBuffer(queue, answerMem, 1, 0, answer, null, null);
+        System.out.println("and output ... created");
+        
         clFinish(queue);
         // Print the result memory
         print(a);
