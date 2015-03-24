@@ -113,13 +113,6 @@ public class HelloWorld {
  
     public static void main(String[] args) {
     	
-    	System.setProperty("org.lwjgl.librarypath",
-    			"/opt/cuda");
-    	
-    	System.setProperty("os.name","Linux");
-    	//System.getenv().put("JAVA_STARTED_ON_FIRST_THREAD_"+ getpid(),
-    	//		"1");
-    	
     	System.out.println("JAVA_STARTED_ON_FIRST_THREAD_"+ getpid()+"::"+
     			System.getenv().get("JAVA_STARTED_ON_FIRST_THREAD_" + getpid()));
     	
